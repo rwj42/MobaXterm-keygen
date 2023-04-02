@@ -1,15 +1,18 @@
-#/usr/bin/env python3
-'''
+# /usr/bin/env python3
+"""
 Author: Double Sine
 License: GPLv3
-'''
-import os, sys, zipfile
+"""
+import os
+import sys
+import zipfile
 
 VariantBase64Table = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
-VariantBase64Dict = { i : VariantBase64Table[i] for i in range(len(VariantBase64Table)) }
-VariantBase64ReverseDict = { VariantBase64Table[i] : i for i in range(len(VariantBase64Table)) }
+VariantBase64Dict = {i: VariantBase64Table[i] for i in range(len(VariantBase64Table))}
+VariantBase64ReverseDict = {VariantBase64Table[i]: i for i in range(len(VariantBase64Table))}
 
-def VariantBase64Encode(bs : bytes):
+
+def variant_base64_encode(bs: bytes):
     result = b''
     blocks_count, left_bytes = divmod(len(bs), 3)
 
@@ -37,7 +40,8 @@ def VariantBase64Encode(bs : bytes):
         result += block.encode()
         return result
 
-def VariantBase64Decode(s : str):
+
+def variant_base64_decode(s: str):
     result = b''
     blocks_count, left_bytes = divmod(len(s), 4)
 
@@ -64,37 +68,46 @@ def VariantBase64Decode(s : str):
     else:
         raise ValueError('Invalid encoding.')
 
-def EncryptBytes(key : int, bs : bytes):
+
+def encrypt_bytes(key: int, bs: bytes):
     result = bytearray()
     for i in range(len(bs)):
         result.append(bs[i] ^ ((key >> 8) & 0xff))
         key = result[-1] & key | 0x482D
     return bytes(result)
 
-def DecryptBytes(key : int, bs : bytes):
+
+def decrypt_bytes(key: int, bs: bytes):
     result = bytearray()
     for i in range(len(bs)):
         result.append(bs[i] ^ ((key >> 8) & 0xff))
         key = bs[i] & key | 0x482D
     return bytes(result)
 
+
 class LicenseType:
     Professional = 1
     Educational = 3
-    Persional = 4
+    Personal = 4
+    # Persional = 4
 
-def GenerateLicense(Type : LicenseType, Count : int, UserName : str, MajorVersion : int, MinorVersion):
-    assert(Count >= 0)
-    LicenseString = '%d#%s|%d%d#%d#%d3%d6%d#%d#%d#%d#' % (Type, 
-                                                          UserName, MajorVersion, MinorVersion, 
-                                                          Count, 
-                                                          MajorVersion, MinorVersion, MinorVersion,
-                                                          0,    # Unknown
-                                                          0,    # No Games flag. 0 means "NoGames = false". But it does not work.
-                                                          0)    # No Plugins flag. 0 means "NoPlugins = false". But it does not work.
-    EncodedLicenseString = VariantBase64Encode(EncryptBytes(0x787, LicenseString.encode())).decode()
+
+def generate_license(license_type: LicenseType, count: int, username: str, major_version: int, minor_version):
+    assert (count >= 0)
+    license_string = '%d#%s|%d%d#%d#%d3%d6%d#%d#%d#%d#' % (license_type,
+                                                           username, MajorVersion, minor_version,
+                                                           count,
+                                                           major_version, minor_version, minor_version,
+                                                           0,  # Unknown
+                                                           0,
+                                                           # No Games flag. 0 means "NoGames = false". But it does
+                                                           # not work.
+                                                           0)  # No Plugins flag. 0 means "NoPlugins = false". But it
+    # does not work.
+    encoded_license_string = variant_base64_encode(encrypt_bytes(0x787, license_string.encode())).decode()
     with zipfile.ZipFile('Custom.mxtpro', 'w') as f:
-        f.writestr('Pro.key', data = EncodedLicenseString)
+        f.writestr('Pro.key', data=encoded_license_string)
+
 
 def help():
     print('Usage:')
@@ -105,6 +118,7 @@ def help():
     print('                     Example:    10.9')
     print()
 
+
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         help()
@@ -113,11 +127,11 @@ if __name__ == '__main__':
         MajorVersion, MinorVersion = sys.argv[2].split('.')[0:2]
         MajorVersion = int(MajorVersion)
         MinorVersion = int(MinorVersion)
-        GenerateLicense(LicenseType.Professional, 
-                        1,
-                        sys.argv[1], 
-                        MajorVersion, 
-                        MinorVersion)
+        generate_license(LicenseType.Professional,
+                         1,
+                         sys.argv[1],
+                         MajorVersion,
+                         MinorVersion)
         print('[*] Success!')
         print('[*] File generated: %s' % os.path.join(os.getcwd(), 'Custom.mxtpro'))
         print('[*] Please move or copy the newly-generated file to MobaXterm\'s installation path.')
